@@ -31,6 +31,7 @@ function nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
     % Input Preparation
     [pcount,qcount]=jacobianCount(busdata); % P and Q equation counts
     buscount=length(busdata(:,1)); 
+    BusType=busdata(:,2);
     P=busdata(:,3);
     Q=busdata(:,4);
     V=busdata(:,5);
@@ -48,11 +49,11 @@ function nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
         j11_i=1; j12_i=1; j21_i=1; j22_i=1;
         j11_j=1; j12_j=1; j21_j=1; j22_j=1;
         for n=1:buscount
-            if(busdata(n,2)==1) % Slack Bus
+            if(BusType(n)==1) % Slack Bus
                 continue;
-            elseif(busdata(n,2)==2) % PQ Bus
+            elseif(BusType(n)==2) % PQ Bus
                 for m=1:buscount
-                    if(busdata(m,2)==1) % Slack
+                    if(BusType(m)==1) % Slack
                         continue;
                     end
                     % Partial of P with respect to Theta
@@ -62,7 +63,7 @@ function nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
                     j21(j21_i,j21_j)=jqtheta(n,m,V,T,ybus_matrix);
                     j21_j=j21_j+1;
                     % Only do partials with respect to V for PQ buses
-                    if(busdata(m,2)==2) 
+                    if(BusType(m)==2) 
                         % Partial of P with respect to V
                         j12(j12_i,j12_j)=jpv(n,m,V,T,ybus_matrix);
                         j12_j=j12_j+1;
@@ -73,15 +74,15 @@ function nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
                 end
                 j21_i=j21_i+1; j21_j=1;
                 j22_i=j22_i+1; j22_j=1;
-            elseif(busdata(n,2)==3) % PV Bus
+            elseif(BusType(n)==3) % PV Bus
                 for m=1:buscount
-                    if(busdata(m,2)==1) % Slack
+                    if(BusType(m)==1) % Slack
                         continue;
                     end
                     % Partial of P with respect to Theta
                     j11(j11_i,j11_j)=jptheta(n,m,V,T,ybus_matrix);
                     j11_j=j11_j+1;
-                    if(busdata(m,2)==2) % PQ
+                    if(BusType(m)==2) % PQ
                         % Partial of P with respect to V
                         j12(j12_i,j12_j)=jpv(n,m,V,T,ybus_matrix);
                         j12_j=j12_j+1;
@@ -101,16 +102,16 @@ function nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
         % Update State Variables
         deltas_index=1;
         for n=1:buscount
-            if busdata(n,2)==1 % slack
+            if BusType(n)==1 % slack
                 continue;
             end
             T(n)=T(n)+deltas(deltas_index);
             deltas_index=deltas_index+1;
         end
         for n=1:buscount
-            if busdata(n,2)==1 % slack
+            if BusType(n)==1 % slack
                 continue;
-            elseif busdata(n,2)==3 % PV
+            elseif BusType(n)==3 % PV
                 continue;
             end
             V(n)=V(n)+deltas(deltas_index);
@@ -126,13 +127,13 @@ function nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
             Pfp=zeros(buscount,1);
             Qfp=zeros(buscount,1);
             for n=1:buscount
-                if busdata(n,2)==1 % slack
+                if BusType(n)==1 % slack
                     Pfp(n,1)=0;
                     Qfp(n,1)=0;
                 else
                     Pfp(n,1)=Pf(pf_index,1);
                     pf_index=pf_index+1;
-                    if busdata(n,2)==3 % PV
+                    if BusType(n)==3 % PV
                         Qfp(n,1)=qfunc(n,V,T,ybus_matrix);
                     else
                         Qfp(n,1)=Qf(qf_index,1);

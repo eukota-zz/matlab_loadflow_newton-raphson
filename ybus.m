@@ -17,7 +17,7 @@ function [yb]=ybus(bus,branch)
     B=branch(:,6);
     rowcount=length(From);
     
-    [buscount,datacols]=size(bus);
+    buscount=length(bus(:,1));
     yb_offdiag=zeros(buscount); % defaults to square size
     yb_B=zeros(buscount);
     
@@ -38,8 +38,8 @@ function [yb]=ybus(bus,branch)
         busnum=bus(x,1);
         offdiagsum = -1*(sum(yb_offdiag(x,:)));
         offdiag_Bs = sum(yb_B(x,:))/2;
-        bus_g=0;%bus(x,4);
-        bus_b=0;%bus(x,5);
+        bus_g=bus(x,7);
+        bus_b=bus(x,8);
         yb(busnum,busnum)=offdiagsum + bus_g + bus_b*1i + offdiag_Bs;
     end
 end
