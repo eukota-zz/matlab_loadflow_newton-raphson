@@ -2,10 +2,10 @@
 % Newton-Raphson Power Flow performs a classic power flow. Required inputs
 % provide bus and branch data about the circuit.
 %%% USAGE
-% * *nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)*
-% * *nrpf(busdata,branchdata,PRINT_ITERS,THRESH)*
-% * *nrpf(busdata,branchdata,PRINT_ITERS)*
-% * *nrpf(busdata,branchdata)*
+% * *[results]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)*
+% * *[results]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH)*
+% * *[results]=nrpf(busdata,branchdata,PRINT_ITERS)*
+% * *[results]=nrpf(busdata,branchdata)*
 %%% INPUTS
 % * *busdata*: bus data matrix in form: [Bus Number,Type,P,Q,V,Theta]
 % * *branchdata*: branch data matrix in form: [From Bus,To Bus,R(pu),X(pu),G(pu),B(pu)]
@@ -14,7 +14,7 @@
 % * *ITER_MAX*: indicate maximum number of iterations, defaults to 10
 %%% OUTPUTS
 % * Prints final iteration results of the bus data.
-function nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
+function [results]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
     if(nargin<5)
         ITER_MAX=10;   % maximum number of iterations
     end
@@ -25,125 +25,68 @@ function nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
         PRINT_ITERS=0; % debug tool: 1=print iterations, 0=do not print
     end
 
+    % Maps of data to return
+    results=containers.Map;
+    
     % Admittance matrix 
     ybus_matrix=ybus(busdata,branchdata);
+    results('ybus')=ybus_matrix;
 
     % Input Preparation
-    [pcount,qcount]=jacobianCount(busdata); % P and Q equation counts
-    buscount=length(busdata(:,1)); 
-    BusType=busdata(:,2);
+    BusTypes=busdata(:,2);
+    buscount=length(BusTypes); 
     P=busdata(:,3);
     Q=busdata(:,4);
     V=busdata(:,5);
     T=busdata(:,6);    
-
-    [Pf,Qf]=mismatch(P,Q,V,T,busdata,ybus_matrix);
+    results('P')=P;
+    results('Q')=Q;
+    results('V')=V;
+    results('T')=T;
+    
+    [Pmm,Qmm,err]=mismatch(P,Q,V,T,BusTypes,ybus_matrix);
+    if(isempty(err)==0)
+        disp(err);
+        return;
+    end
 
     %% Newton-Raphson Iterations
-    j11=zeros(pcount,pcount);
-    j12=zeros(pcount,qcount);
-    j21=zeros(qcount,pcount);
-    j22=zeros(qcount,qcount);
     iter=1;
-    while (max(abs(Qf)) > THRESH || max(abs(Pf)) > THRESH) && iter < ITER_MAX
-        j11_i=1; j12_i=1; j21_i=1; j22_i=1;
-        j11_j=1; j12_j=1; j21_j=1; j22_j=1;
-        for n=1:buscount
-            if(BusType(n)==1) % Slack Bus
-                continue;
-            elseif(BusType(n)==2) % PQ Bus
-                for m=1:buscount
-                    if(BusType(m)==1) % Slack
-                        continue;
-                    end
-                    % Partial of P with respect to Theta
-                    j11(j11_i,j11_j)=jptheta(n,m,V,T,ybus_matrix);
-                    j11_j=j11_j+1;
-                    % Partial of Q with respect to Theta
-                    j21(j21_i,j21_j)=jqtheta(n,m,V,T,ybus_matrix);
-                    j21_j=j21_j+1;
-                    % Only do partials with respect to V for PQ buses
-                    if(BusType(m)==2) 
-                        % Partial of P with respect to V
-                        j12(j12_i,j12_j)=jpv(n,m,V,T,ybus_matrix);
-                        j12_j=j12_j+1;
-                        % Partial of Q with respect to V
-                        j22(j22_i,j22_j)=jqv(n,m,V,T,ybus_matrix);
-                        j22_j=j22_j+1;
-                    end
-                end
-                j21_i=j21_i+1; j21_j=1;
-                j22_i=j22_i+1; j22_j=1;
-            elseif(BusType(n)==3) % PV Bus
-                for m=1:buscount
-                    if(BusType(m)==1) % Slack
-                        continue;
-                    end
-                    % Partial of P with respect to Theta
-                    j11(j11_i,j11_j)=jptheta(n,m,V,T,ybus_matrix);
-                    j11_j=j11_j+1;
-                    if(BusType(m)==2) % PQ
-                        % Partial of P with respect to V
-                        j12(j12_i,j12_j)=jpv(n,m,V,T,ybus_matrix);
-                        j12_j=j12_j+1;
-                    end
-                end
-            end
-            j11_i=j11_i+1; j11_j=1;
-            j12_i=j12_i+1; j12_j=1;
-        end
-        jfull=[j11,j12;j21,j22];
-
-        [Pf,Qf]=mismatch(P,Q,V,T,busdata,ybus_matrix);
-
-        % Invert Jacobian
-        deltas=-1*jfull^-1*[Pf;Qf];
-
-        % Update State Variables
-        deltas_index=1;
-        for n=1:buscount
-            if BusType(n)==1 % slack
-                continue;
-            end
-            T(n)=T(n)+deltas(deltas_index);
-            deltas_index=deltas_index+1;
-        end
-        for n=1:buscount
-            if BusType(n)==1 % slack
-                continue;
-            elseif BusType(n)==3 % PV
-                continue;
-            end
-            V(n)=V(n)+deltas(deltas_index);
-            deltas_index=deltas_index+1;
-        end
-
-        % Print Iteration If Enabled
+    while (max(abs(Qmm)) > THRESH || max(abs(Pmm)) > THRESH) && iter < ITER_MAX
+        [itermap]=nrpf_jac(BusTypes,P,Q,V,T,ybus_matrix);
+        V=itermap('V'); 
+        T=itermap('T'); 
+        Pmm=itermap('Pmm');
+        Qmm=itermap('Qmm');
+        
+        % Print Iteration
         if(PRINT_ITERS==1)
-            fprintf('Iter: %d\n',iter);
-            fprintf('Bus\t    V\t\tTh(rad)\t    Th(deg)   Mismatch P   Mismatch Q   Mismatch S\n');
-            pf_index=1;
-            qf_index=1;
-            Pfp=zeros(buscount,1);
-            Qfp=zeros(buscount,1);
+            pmm_index=1;
+            qmm_index=1;
+            Pmmp=zeros(buscount,1);
+            Qmmp=zeros(buscount,1);
             for n=1:buscount
-                if BusType(n)==1 % slack
-                    Pfp(n,1)=0;
-                    Qfp(n,1)=0;
+                if BusTypes(n)==1 % slack
+                    Pmmp(n,1)=0;
+                    Qmmp(n,1)=0;
                 else
-                    Pfp(n,1)=Pf(pf_index,1);
-                    pf_index=pf_index+1;
-                    if BusType(n)==3 % PV
-                        Qfp(n,1)=qfunc(n,V,T,ybus_matrix);
+                    Pmmp(n,1)=Pmm(pmm_index,1);
+                    pmm_index=pmm_index+1;
+                    if BusTypes(n)==3 % PV
+                        Qmmp(n,1)=qfunc(n,V,T,ybus_matrix);
                     else
-                        Qfp(n,1)=Qf(qf_index,1);
-                        qf_index=qf_index+1;
+                        Qmmp(n,1)=Qmm(qmm_index,1);
+                        qmm_index=qmm_index+1;
                     end
                 end            
             end
-            Sfp=(Pfp.^2+Qfp.^2).^0.5;
-            disp([busdata(:,1),V,T,T*180/pi,Pfp,Qfp,Sfp]);
+            iterstring=sprintf('Iter %d',iter);
+            pmatrix=[V,T,T*180/pi,Pmmp,Qmmp];
+            buslabels=sprintf('Bus_%d ', 1:buscount);
+            printmat(pmatrix,iterstring,buslabels,'V Th(rad) Th(deg) MM_P MM_Q');
         end
+        iterkey=sprintf('iter%d',iter);
+        results(iterkey)=itermap;
         iter=iter+1;
     end
 
@@ -155,14 +98,18 @@ function nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
     else
         fprintf(', mismatch target of S=%f likely not met as max iterations performed\n',THRESH);
     end
-    fprintf('\t\tBus\t\tP\t\t\t\tQ\t\t\t\tV\t\t\t\tTh(rad)\t\t\tTh(deg)\n');
+    pmatrix=zeros(buscount,2);
     for n=1:buscount
-        fprintf('\t\t%d',n);
-        fprintf('\t\t%f',pfunc(n,V,T,ybus_matrix));
-        fprintf('\t\t%f',qfunc(n,V,T,ybus_matrix));
-        fprintf('\t\t%f',V(n));
-        fprintf('\t\t%f',T(n));
-        fprintf('\t\t%f',T(n)*180/pi);
-        fprintf('\n');
+        pmatrix(n,1)=pfunc(n,V,T,ybus_matrix);
+        pmatrix(n,2)=qfunc(n,V,T,ybus_matrix);
     end
+    pmatrix=[pmatrix,V,T,T*180/pi];
+    buslabels=sprintf('Bus_%d ', 1:buscount);
+    printmat(pmatrix,'name',buslabels,'P Q V Th(rad) Th(deg)');
+    
+    %% Gather Results
+    results('P')=P;
+    results('Q')=Q;
+    results('V')=V;
+    results('T')=T;
 end
