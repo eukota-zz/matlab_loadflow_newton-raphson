@@ -13,7 +13,7 @@ function [yb]=ybus(bus,branch)
     To=branch(:,2);
     R=branch(:,3);
     X=branch(:,4);
-    G=branch(:,5);
+    G=branch(:,5); % currently unused
     B=branch(:,6);
     rowcount=length(From);
     
