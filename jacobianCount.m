@@ -7,6 +7,7 @@
 %%% OUTPUTS
 % * *pcount*: number of implicit P equations
 % * *qcount*: number of implicit Q equations
+% * *err*: error if any happened, emtpy string otherwise
 function [pcount,qcount,err]=jacobianCount(BusTypes)
     buscount=length(BusTypes);
     err='';

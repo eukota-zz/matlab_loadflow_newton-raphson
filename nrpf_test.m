@@ -1,5 +1,13 @@
 %% nrpf_test
 % Runs a known system through nrpf to verify I haven't broken it
+%%% USAGE
+% * *[mapL,mapR,err]=nrpf_test()*
+%%% INPUTS
+% * *NONE*
+%%% OUTPUTS
+% * *mapL*: old version of the results
+% * *mapR*: new version of the results
+% * *err*: error result or empty string if there was none
 function [mapL,mapR,err]=nrpf_test()
     %% Test Data from Homework 8, Problem 2
     % BusData

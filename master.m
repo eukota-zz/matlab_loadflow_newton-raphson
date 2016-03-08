@@ -1,8 +1,7 @@
 %% EE 556, Project Master File
 % Runs all problems
 
-clear all;
-%clc;
+clear;
 
 %% Test System A
 % 4-bus

@@ -1,5 +1,15 @@
-%%compare_maps(mapL,mapR)
-
+%% compare_maps(mapL,mapR)
+% Compares two maps to see if they are equivalent.
+% Works at one nested level with maps (map of maps)
+% Only works on numerical data (no strings)
+% Works on arrays and matrixes
+%%% USAGE
+% * *[err]=compare_maps(mapL,mapR)*
+%%% INPUTS
+% * *mapL*: one map to compare
+% * *mapR*: second map to compare
+%%% OUTPUTS
+% * *err*: error if the maps are not equal or an empty string if they are
 function [err]=compare_maps(mapL,mapR)
     keysL = mapL.keys;
     keysR = mapR.keys;

@@ -13,7 +13,14 @@
 % * *THRESH*: indicate mismatch threshold, defaults to 0.001
 % * *ITER_MAX*: indicate maximum number of iterations, defaults to 10
 %%% OUTPUTS
-% * Prints final iteration results of the bus data.
+% * *results*: a map conaintaing keys-value pairs:
+%             'ybus'     ybus of the system
+%             'P'        final real power for each bus
+%             'Q'        final reactive power for each bus
+%             'V'        final voltage for each bus
+%             'T'        final theta for each bus
+%             'itermap'  map of all maps returned from nrpf_jac
+% * *Prints final result*
 function [results]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
     if(nargin<5)
         ITER_MAX=10;   % maximum number of iterations

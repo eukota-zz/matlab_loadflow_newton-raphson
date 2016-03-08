@@ -1,5 +1,21 @@
 %% nrpfjacobian Newton-Raphson Power Flow Jacobian
 % Calculates the Jacobian for a provided power system
+%%% USAGE
+% * *[itermap]=nrpf_jac(BusTypes,P,Q,V,T,ybus_matrix)*
+%%% INPUTS
+% * *BusTypes*: column vector of bustypes, 1=slack, 2=PQ, 3=PV
+% * *P*: column vector of real power for each bus
+% * *Q*: column vector of reactive power for each bus
+% * *V*: column vector of voltage for each bus
+% * *T*: column vector of theta for each voltage of each bus
+% * *ybus_matrix*: admittance matrix for the system
+%%% OUTPUTS
+% * *itermap*: a map containing 
+%             'jacobian'  jacobian of iteration
+%             'Qmm'       reactive power mismatch for each bus
+%             'Pmm'       real power mismatch for each bus
+%             'V'         new voltage for each bus
+%             'T'         new theta for each bus
 function [itermap]=nrpf_jac(BusTypes,P,Q,V,T,ybus_matrix)
     [pcount,qcount,err]=jacobianCount(BusTypes); % P and Q equation counts
     if(isempty(err)==0)
