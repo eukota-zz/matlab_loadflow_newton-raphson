@@ -3,28 +3,25 @@
 %%% USAGE
 % * *[pcount,qcount]=jacobianCount(busdata)*
 %%% INPUTS
-% * *busdata*: data describing the bus and the type, extraneous data beyond is ok
+% * *BusTypes*: column vector of bustypes, 1=slack, 2=PQ, 3=PV
 %%% OUTPUTS
 % * *pcount*: number of implicit P equations
 % * *qcount*: number of implicit Q equations
-%%% SAMPLE INPUT
-% Bustype: 1=slack, 2=PQ, 3=PV
-%          Bus  Type 
-% busdata=[1    1;
-%          2    2;   
-%          3    2;   
-% ];
-function [pcount,qcount]=jacobianCount(busdata)
-    [buscount,]=size(busdata);
+function [pcount,qcount,err]=jacobianCount(BusTypes)
+    buscount=length(BusTypes);
+    err='';
+    if max(max(BusTypes))>3 || min(min(BusTypes))<1
+        err='ERROR: jacobianCount BusTypes exceed 1-3 range';
+    end
     pcount=0;
     qcount=0;
     for n=1:buscount
-        if busdata(n,2)==1     % Slack has no implicit equations
+        if BusTypes(n)==1     % Slack has no implicit equations
             continue;
-        elseif busdata(n,2)==2 % PQ has two implicit equations
+        elseif BusTypes(n)==2 % PQ has two implicit equations
             pcount=pcount+1;
             qcount=qcount+1;
-        elseif busdata(n,2)==3 % PV has one implicit equation
+        elseif BusTypes(n)==3 % PV has one implicit equation
             pcount=pcount+1;
         end
     end
