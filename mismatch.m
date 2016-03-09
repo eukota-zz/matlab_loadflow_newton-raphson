@@ -8,11 +8,11 @@
 % * *V*: vector of voltage values
 % * *T*: vector of theta values
 % * *BusTypes*: bus type vector (1=slack,2=pq,3=pv)
-% * *ybus*: full ybus matrix
+% * *Ybus*: full ybus matrix
 %%% OUTPUTS
 % * *Pmm*: mismatch for P
 % * *Qmm*: mismatch for Q
-function [Pmm,Qmm,err]=mismatch(P,Q,V,T,BusTypes,ybus)
+function [Pmm,Qmm,err]=mismatch(P,Q,V,T,BusTypes,Ybus)
     [pcount,qcount,err]=jacobianCount(BusTypes);
     mismatch_index_P=1;
     mismatch_index_Q=1;
@@ -23,10 +23,10 @@ function [Pmm,Qmm,err]=mismatch(P,Q,V,T,BusTypes,ybus)
         if(BusTypes(n)==1) % Slack
             continue;
         end
-        Pmm(mismatch_index_P,1)=pfunc(n,V,T,ybus)-P(n);
+        Pmm(mismatch_index_P,1)=pfunc(n,V,T,Ybus)-P(n);
         mismatch_index_P=mismatch_index_P+1;
         if BusTypes(n)==2 % PQ 
-            Qmm(mismatch_index_Q,1)=qfunc(n,V,T,ybus)-Q(n);
+            Qmm(mismatch_index_Q,1)=qfunc(n,V,T,Ybus)-Q(n);
             mismatch_index_Q=mismatch_index_Q+1;
         end
     end

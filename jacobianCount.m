@@ -1,7 +1,7 @@
 %% jacobianCount
 % Counts the number of implicit P and implicit Q functions given a bus.
 %%% USAGE
-% * *[pcount,qcount]=jacobianCount(busdata)*
+% * *[pcount,qcount]=jacobianCount(BusTypes)*
 %%% INPUTS
 % * *BusTypes*: column vector of bustypes, 1=slack, 2=PQ, 3=PV
 %%% OUTPUTS

@@ -35,22 +35,31 @@ function [results]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
     % Maps of data to return
     results=containers.Map;
     
-    % Admittance matrix 
-    ybus_matrix=ybus(busdata,branchdata);
-    results('ybus')=ybus_matrix;
-
     % Input Preparation
+    BusNums=busdata(:,1);
     BusTypes=busdata(:,2);
     buscount=length(BusTypes); 
-    P=busdata(:,3);
-    Q=busdata(:,4);
-    V=busdata(:,5);
-    T=busdata(:,6);    
-    results('P')=P;
-    results('Q')=Q;
-    results('V')=V;
-    results('T')=T;
+    PG=busdata(:,3);
+    QG=busdata(:,4);
+    PL=busdata(:,5);
+    QL=busdata(:,6);
+    V=busdata(:,7);
+    T=busdata(:,8);
+    BusG=busdata(:,9);
+    BusB=busdata(:,10);
+    results('PG')=PG;
+    results('QG')=QG;
+    results('PL')=PL;
+    results('QL')=QL;
+
+    % Calculate P injections
+    P=PG-PL;
+    Q=QG-QL;
     
+    % Admittance matrix 
+    ybus_matrix=ybus(BusNums,BusG,BusB,branchdata);
+    results('ybus')=ybus_matrix;
+
     [Pmm,Qmm,err]=mismatch(P,Q,V,T,BusTypes,ybus_matrix);
     if(isempty(err)==0)
         disp(err);
@@ -107,16 +116,24 @@ function [results]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
     end
     pmatrix=zeros(buscount,2);
     for n=1:buscount
-        pmatrix(n,1)=pfunc(n,V,T,ybus_matrix);
-        pmatrix(n,2)=qfunc(n,V,T,ybus_matrix);
+        Pinj=nearzero(pfunc(n,V,T,ybus_matrix));
+        Qinj=nearzero(qfunc(n,V,T,ybus_matrix));
+        pmatrix(n,1)=nearzero(Pinj+PL(n));
+        pmatrix(n,2)=nearzero(Qinj+QL(n));
+        pmatrix(n,3)=nearzero(PL(n));
+        pmatrix(n,4)=nearzero(QL(n));
     end
     pmatrix=[pmatrix,V,T,T*180/pi];
     buslabels=sprintf('Bus_%d ', 1:buscount);
-    printmat(pmatrix,'name',buslabels,'P Q V Th(rad) Th(deg)');
+    printmat(pmatrix,'name',buslabels,'PG QG PL QL V Th(rad) Th(deg)');
     
     %% Gather Results
-    results('P')=P;
-    results('Q')=Q;
+    results('PG')=pmatrix(:,1);
+    results('QG')=pmatrix(:,2);
+    results('PL')=pmatrix(:,3);
+    results('QL')=pmatrix(:,4);
+    results('P')=results('PG')-results('PL');
+    results('Q')=results('QG')-results('QL');
     results('V')=V;
     results('T')=T;
 end

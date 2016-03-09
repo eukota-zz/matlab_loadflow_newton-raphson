@@ -1,18 +1,17 @@
 %% tsa: Test System A
 % Provides bus and branch data for Test System A
 function [busdata,branchdata]=tsa()
-    %%% Bus Data
-    %             Bus   Type    P       Q       V    Theta  G  B
-    busdata=[     1      1      -50     -30.99  1    0      0  0.05;
-                  2      2      -170    -105.35 1    0      0  0;
-                  3      2      -200    -123.94 1    0      0  0;
-                  4      3      238     -49.58  1.02 0      0  0.05;
+    %%% Bus Data  1      2      3    4   5    6      7    8      9  10
+    %             Bus   Type    PG   QG  PL   QL     V    Theta  G  B
+    busdata=[     1      1      0    0   50   30.99  1    0      0  0.05;
+                  2      2      0    0   170  105.35 1    0      0  0;
+                  3      2      0    0   200  123.94 1    0      0  0;
+                  4      3      318  0   80   49.58  1.02 0      0  0.05;
     ];
     basemva=100;
     basekv=230;
-    busdata(:,3)=busdata(:,3)/basemva;
-    busdata(:,4)=busdata(:,4)/basemva;
-
+    busdata(:,3:6)=busdata(:,3:6)/basemva;
+    
     %%% Branch Data
     %                From  To  R(pu)    X(pu)    G(pu)  B(pu)   %% B/2 (given)
     branchdata=[     1     2   0.01008  0.05040  0      0.1025; %  0.05125

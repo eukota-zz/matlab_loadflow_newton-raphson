@@ -3,19 +3,22 @@
 %%% USAGE
 % * *[mapL,mapR,err]=nrpf_test()*
 %%% INPUTS
-% * *NONE*
+% * *PRINT_ITERS*: passed into nrpf, prints out each iteration of = 1
 %%% OUTPUTS
 % * *mapL*: old version of the results
 % * *mapR*: new version of the results
 % * *err*: error result or empty string if there was none
-function [mapL,mapR,err]=nrpf_test()
+function [mapL,mapR,err]=nrpf_test(PRINT_ITERS)
+    if(nargin<1)
+        PRINT_ITERS=0;
+    end
     %% Test Data from Homework 8, Problem 2
     % BusData
     % Bustype: 1=slack, 2=PQ, 3=PV
-    %        Bus    Type    P       Q       V       Theta  G  B
-    busdata=[1      1       0       0       1.0     0      0   0;
-             2      2       -1      -0.5    1.0     0      0   0;
-             3      2       -1.5    -0.75   1.0     0      0   0;
+    %        Bus   Type    PG   QG  PL   QL     V    Theta  G  B
+    busdata=[1      1      0    0   0    0      1.0  0      0   0;
+             2      2      0    0   1    0.5    1.0  0      0   0;
+             3      2      0    0   1.5  0.75   1.0  0      0   0;
     ];
     % Branch Data
     % Reverse Engineered to create provided ybus
@@ -32,7 +35,7 @@ function [mapL,mapR,err]=nrpf_test()
     %% Run NRPF
     load('nrpf_test_results.mat');
     mapL=nrpf_test_results;
-    mapR=nrpf(busdata,branchdata);
+    mapR=nrpf(busdata,branchdata,PRINT_ITERS);
 
     %% Verify Results
     err=compare_maps(mapL,mapR);

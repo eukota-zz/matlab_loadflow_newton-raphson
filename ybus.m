@@ -1,13 +1,13 @@
 %% ybus
 % Calculates the ybus matrix from bus and branch data
 %%% USAGE
-% * *[yb]=ybus(busdata,branchdata)*
+% * *[yb]=ybus(bus,branch)*
 %%% INPUTS
-% * *busdata*: bus G and B admittance data
-% * *branchdata*: branch R, X, G, and B data
+% * *bus*: bus G and B admittance data
+% * *branch*: branch R, X, G, and B data
 %%% OUTPUTS
 % * *yb*: ybus matrix
-function [yb]=ybus(bus,branch)
+function [yb]=ybus(BusNums,BusG,BusB,branch)
     % Parse branch
     From=branch(:,1);
     To=branch(:,2);
@@ -17,7 +17,7 @@ function [yb]=ybus(bus,branch)
     B=branch(:,6);
     rowcount=length(From);
     
-    buscount=length(bus(:,1));
+    buscount=length(BusNums);
     yb_offdiag=zeros(buscount); % defaults to square size
     yb_B=zeros(buscount);
     
@@ -35,11 +35,11 @@ function [yb]=ybus(bus,branch)
     % On-Diagonal
     yb=yb_offdiag;
     for x=1:buscount
-        busnum=bus(x,1);
+        busnum=BusNums(x);
         offdiagsum = -1*(sum(yb_offdiag(x,:)));
         offdiag_Bs = sum(yb_B(x,:))/2;
-        bus_g=bus(x,7);
-        bus_b=bus(x,8);
+        bus_g=BusG(x);
+        bus_b=BusB(x);
         yb(busnum,busnum)=offdiagsum + bus_g + bus_b*1i + offdiag_Bs;
     end
 end
