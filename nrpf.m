@@ -69,11 +69,41 @@ function [results]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
     %% Newton-Raphson Iterations
     iter=1;
     while (max(abs(Qmm)) > THRESH || max(abs(Pmm)) > THRESH) && iter < ITER_MAX
-        [itermap]=nrpf_jac(BusTypes,P,Q,V,T,ybus_matrix);
-        V=itermap('V'); 
-        T=itermap('T'); 
-        Pmm=itermap('Pmm');
-        Qmm=itermap('Qmm');
+        jfull=nrpf_jac(BusTypes,P,Q,V,T,ybus_matrix);
+        itermap=containers.Map;
+        itermap('jacobian')=jfull;
+
+        [Pmm,Qmm,err]=mismatch(P,Q,V,T,BusTypes,ybus_matrix);
+        if(isempty(err)==0)
+            disp(err);
+            return;
+        end
+        itermap('Pmm')=Pmm;
+        itermap('Qmm')=Qmm;
+
+        % Invert Jacobian
+        deltas=-1*jfull^-1*[Pmm;Qmm];
+
+        % Update State Variables
+        deltas_index=1;
+        for n=1:buscount
+            if BusTypes(n)==1 % slack
+                continue;
+            end
+            T(n)=T(n)+deltas(deltas_index);
+            deltas_index=deltas_index+1;
+        end
+        for n=1:buscount
+            if BusTypes(n)==1 % slack
+                continue;
+            elseif BusTypes(n)==3 % PV
+                continue;
+            end
+            V(n)=V(n)+deltas(deltas_index);
+            deltas_index=deltas_index+1;
+        end
+        itermap('V')=V;
+        itermap('T')=T;
         
         % Print Iteration
         if(PRINT_ITERS==1)
@@ -97,9 +127,9 @@ function [results]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
                 end            
             end
             iterstring=sprintf('Iter %d',iter);
-            pmatrix=[V,T,T*180/pi,Pmmp,Qmmp];
+            pmatrix=[V,T*180/pi,Pmmp,Qmmp];
             buslabels=sprintf('Bus_%d ', 1:buscount);
-            printmat(pmatrix,iterstring,buslabels,'V Th(rad) Th(deg) MM_P MM_Q');
+            printmat(pmatrix,iterstring,buslabels,'V Th(deg) MM_P MM_Q');
         end
         iterkey=sprintf('iter%d',iter);
         results(iterkey)=itermap;
@@ -123,9 +153,9 @@ function [results]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
         pmatrix(n,3)=nearzero(PL(n));
         pmatrix(n,4)=nearzero(QL(n));
     end
-    pmatrix=[pmatrix,V,T,T*180/pi];
+    pmatrix=[pmatrix,V,T*180/pi];
     buslabels=sprintf('Bus_%d ', 1:buscount);
-    printmat(pmatrix,'name',buslabels,'PG QG PL QL V Th(rad) Th(deg)');
+    printmat(pmatrix,'name',buslabels,'PG QG PL QL V Th(deg)');
     
     %% Gather Results
     results('PG')=pmatrix(:,1);

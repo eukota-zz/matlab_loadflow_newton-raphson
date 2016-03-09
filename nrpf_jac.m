@@ -1,7 +1,7 @@
 %% nrpfjacobian Newton-Raphson Power Flow Jacobian
 % Calculates the Jacobian for a provided power system
 %%% USAGE
-% * *[itermap]=nrpf_jac(BusTypes,P,Q,V,T,ybus_matrix)*
+% * *[jfull]=nrpf_jac(BusTypes,P,Q,V,T,ybus_matrix)*
 %%% INPUTS
 % * *BusTypes*: column vector of bustypes, 1=slack, 2=PQ, 3=PV
 % * *P*: column vector of real power for each bus
@@ -10,19 +10,13 @@
 % * *T*: column vector of theta for each voltage of each bus
 % * *ybus_matrix*: admittance matrix for the system
 %%% OUTPUTS
-% * *itermap*: a map containing 
-%             'jacobian'  jacobian of iteration
-%             'Qmm'       reactive power mismatch for each bus
-%             'Pmm'       real power mismatch for each bus
-%             'V'         new voltage for each bus
-%             'T'         new theta for each bus
-function [itermap]=nrpf_jac(BusTypes,P,Q,V,T,ybus_matrix)
+% * *jfull*: the full jacobian matrix
+function [jfull]=nrpf_jac(BusTypes,P,Q,V,T,ybus_matrix)
     [pcount,qcount,err]=jacobianCount(BusTypes); % P and Q equation counts
     if(isempty(err)==0)
         disp(err);
         return;
     end
-    itermap=containers.Map;
     
     % Jacobian Submatrixes
     j11=zeros(pcount,pcount);
@@ -80,39 +74,6 @@ function [itermap]=nrpf_jac(BusTypes,P,Q,V,T,ybus_matrix)
         j12_i=j12_i+1; j12_j=1;
     end
     jfull=[j11,j12;j21,j22];
-    itermap('jacobian')=jfull;
-
-    [Pmm,Qmm,err]=mismatch(P,Q,V,T,BusTypes,ybus_matrix);
-    if(isempty(err)==0)
-        disp(err);
-        return;
-    end
-    itermap('Pmm')=Pmm;
-    itermap('Qmm')=Qmm;
-
-    % Invert Jacobian
-    deltas=-1*jfull^-1*[Pmm;Qmm];
-
-    % Update State Variables
-    deltas_index=1;
-    for n=1:buscount
-        if BusTypes(n)==1 % slack
-            continue;
-        end
-        T(n)=T(n)+deltas(deltas_index);
-        deltas_index=deltas_index+1;
-    end
-    for n=1:buscount
-        if BusTypes(n)==1 % slack
-            continue;
-        elseif BusTypes(n)==3 % PV
-            continue;
-        end
-        V(n)=V(n)+deltas(deltas_index);
-        deltas_index=deltas_index+1;
-    end
-    itermap('V')=V;
-    itermap('T')=T;
 end
 
 
