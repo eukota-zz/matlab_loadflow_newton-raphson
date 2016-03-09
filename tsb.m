@@ -21,9 +21,8 @@ function [busdata,branchdata]=tsb()
     ];
     basemva=100;
     basekv=230;
-    busdata(:,3)=busdata(:,3)/basemva;
-    busdata(:,4)=busdata(:,4)/basemva;
-
+    busdata(:,3:6)=busdata(:,3:6)/basemva;
+    
     %%% Branch Data
     %               From    To      R(pu)   X(pu)   G(pu)   B(pu)   
     branchdata=[    1       2       0.01938 0.05917 0       0.05280 ;
