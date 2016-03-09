@@ -2,8 +2,8 @@
 % prints out a results map from the nrpf given various options
 function [pmap]=print_nrpf(rmap,pmap)
     if(nargin<2)
-        keySet={'P','Q','T','V','ybus'};
-        valSet={ 1 , 1 , 1 , 1 , 1 };
+        keySet=rmap.keys;
+        valSet=ones(1,length(keySet));
         pmap=containers.Map(keySet,valSet);
         print_nrpf(rmap,pmap);
         return;
@@ -19,11 +19,7 @@ function [pmap]=print_nrpf(rmap,pmap)
             end
         end
         if(isa(value,'containers.Map'))
-            % get 
-            keyset={'Pmm','Qmm','T','V','jacobian'};
-            valset={  1  ,  1  , 1 , 1 , 1 };
-            iterpmap=containers.Map(keyset,valset);
-            print_nrpf(value,iterpmap); %% RECURSIVE!!!
+            print_nrpf(value); %% RECURSIVE!!!
         end
     end
     
