@@ -26,7 +26,7 @@
 % * *Prints final result*
 function [results,err]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX,FREEZE_JAC)
     if(nargin<6)
-        FREEZE_JAC=0;
+        FREEZE_JAC=0;  % only calculate the first jacobian
     end
     if(nargin<5)
         ITER_MAX=10;   % maximum number of iterations
@@ -149,6 +149,7 @@ function [results,err]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX,FREEZ
             pmatrix=[V,T*180/pi,Pmmp,Qmmp];
             buslabels=sprintf('Bus_%d ', 1:buscount);
             printmat(pmatrix,iterstring,buslabels,'V Th(deg) MM_P MM_Q');
+            results('pmatrix')=pmatrix;
         end
         iterkey=sprintf('iter%d',iter);
         results(iterkey)=itermap;
@@ -165,6 +166,7 @@ function [results,err]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX,FREEZ
         PL(n)=nearzero(PL(n));
         QL(n)=nearzero(QL(n));
     end
+    
     % Branch Power
     [From,To,~,~,~,~,err]=parse_branch_data(branchdata);
     if(isempty(err)==0)
@@ -172,14 +174,41 @@ function [results,err]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX,FREEZ
         return;
     end
     branchcount=length(From);
-    branchpower=zeros(branchcount,4); % from, to, p, q
+    branchpowerF=zeros(branchcount,5); % from, to, p, q, s
+    branchpowerB=zeros(branchcount,5); % to, from, p, q, s
     for n=1:branchcount
-        branchpower(n,1)=From(n);
-        branchpower(n,2)=To(n);
-        branchpower(n,3)=pbranch(From(n),To(n),V,T,ybus_matrix);
-        branchpower(n,4)=qbranch(From(n),To(n),V,T,ybus_matrix);
+        % Forward
+        branchpowerF(n,1)=From(n);
+        branchpowerF(n,2)=To(n);
+        branchpowerF(n,3)=pbranch(From(n),To(n),V,T,ybus_matrix);
+        branchpowerF(n,4)=qbranch(From(n),To(n),V,T,ybus_matrix);
+        branchpowerF(n,5)=(branchpowerF(n,3)^2+branchpowerF(n,4)^2)^(0.5);
+        % Backward
+        branchpowerB(n,1)=To(n);
+        branchpowerB(n,2)=From(n);
+        branchpowerB(n,3)=pbranch(To(n),From(n),V,T,ybus_matrix);
+        branchpowerB(n,4)=qbranch(To(n),From(n),V,T,ybus_matrix);
+        branchpowerB(n,5)=(branchpowerB(n,3)^2+branchpowerB(n,4)^2)^(0.5);
     end
-%     results('branchflow')=branchpower;
+    results('bff')=branchpowerF;
+    results('bfb')=branchpowerB;
+    
+    %% Branch Power via Miguel's Instructions
+    % Sij=ViIi^*=Vi((Vi-Vj)/Z)
+    % Z=R+jX
+    % V=V
+    S=zeros(buscount,3);
+    for n=1:branchcount
+        S(n,1)=From(n);
+        S(n,2)=To(n);
+        Z=-1/ybus_matrix(From(n),To(n));
+        vfrom=V(From(n))*(cos(T(From(n)))+1i*sin(T(From(n))));
+        vto=V(To(n))*(cos(T(To(n)))+1i*sin(T(To(n))));
+        I=(vfrom-vto)/Z;
+        S(n,3)=vfrom*conj(I);
+    end
+    results('bfs')=S;
+    
     
     %% Note Success or Failure
     if iter<ITER_MAX
