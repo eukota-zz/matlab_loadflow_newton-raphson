@@ -7,14 +7,14 @@
 % * *branch*: branch R, X, G, and B data
 %%% OUTPUTS
 % * *yb*: ybus matrix
-function [yb]=ybus(BusNums,BusG,BusB,branch)
+% * *err*: blank if no problems, error string if problem
+function [yb,err]=ybus(BusNums,BusG,BusB,branch)
     % Parse branch
-    From=branch(:,1);
-    To=branch(:,2);
-    R=branch(:,3);
-    X=branch(:,4);
-    G=branch(:,5); % currently unused
-    B=branch(:,6);
+    [From,To,R,X,~,B,err]=parse_branch_data(branch);
+    if(isempty(err)==0)
+        disp(err);
+        return;
+    end
     rowcount=length(From);
     
     buscount=length(BusNums);

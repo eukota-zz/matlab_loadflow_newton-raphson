@@ -35,7 +35,11 @@ function [mapL,mapR,err]=nrpf_test(PRINT_ITERS)
     %% Run NRPF
     load('nrpf_test_results.mat');
     mapL=nrpf_test_results;
-    mapR=nrpf(busdata,branchdata,PRINT_ITERS);
+    [mapR,err]=nrpf(busdata,branchdata,PRINT_ITERS);
+    if(isempty(err)==0)
+        disp(err);
+        return;
+    end
 
     %% Verify Results
     err=compare_maps(mapL,mapR);

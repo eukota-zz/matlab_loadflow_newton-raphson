@@ -12,6 +12,8 @@
 % * *PRINT_ITERS*: 1 to print each iteration, defaults to 0
 % * *THRESH*: indicate mismatch threshold, defaults to 0.001
 % * *ITER_MAX*: indicate maximum number of iterations, defaults to 10
+% * *FREEZE_JAC*: a silly option for the project which requires us to
+% freeze the jacobian after the first iteration
 %%% OUTPUTS
 % * *results*: a map conaintaing keys-value pairs:
 %             'ybus'     ybus of the system
@@ -20,8 +22,12 @@
 %             'V'        final voltage for each bus
 %             'T'        final theta for each bus
 %             'itermap'  map of all maps returned from nrpf_jac
+% * *err*: empty string if all clear or an error string if there was a problem
 % * *Prints final result*
-function [results]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
+function [results,err]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX,FREEZE_JAC)
+    if(nargin<6)
+        FREEZE_JAC=0;
+    end
     if(nargin<5)
         ITER_MAX=10;   % maximum number of iterations
     end
@@ -38,7 +44,7 @@ function [results]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
     % Input Preparation
     BusNums=busdata(:,1);
     BusTypes=busdata(:,2);
-    buscount=length(BusTypes); 
+    buscount=length(BusTypes);
     PG=busdata(:,3);
     QG=busdata(:,4);
     PL=busdata(:,5);
@@ -47,17 +53,17 @@ function [results]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
     T=busdata(:,8);
     BusG=busdata(:,9);
     BusB=busdata(:,10);
-    results('PG')=PG;
-    results('QG')=QG;
-    results('PL')=PL;
-    results('QL')=QL;
 
     % Calculate P injections
     P=PG-PL;
     Q=QG-QL;
     
     % Admittance matrix 
-    ybus_matrix=ybus(BusNums,BusG,BusB,branchdata);
+    [ybus_matrix,err]=ybus(BusNums,BusG,BusB,branchdata);
+    if(isempty(err)==0)
+        disp(err);
+        return;
+    end
     results('ybus')=ybus_matrix;
 
     [Pmm,Qmm,err]=mismatch(P,Q,V,T,BusTypes,ybus_matrix);
@@ -68,8 +74,21 @@ function [results]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)
 
     %% Newton-Raphson Iterations
     iter=1;
+    if(FREEZE_JAC==1)
+        [jfull,err]=nrpf_jac(BusTypes,V,T,ybus_matrix);
+        if(isempty(err)==0)
+            disp(err);
+            return;
+        end
+    end
     while (max(abs(Qmm)) > THRESH || max(abs(Pmm)) > THRESH) && iter < ITER_MAX
-        jfull=nrpf_jac(BusTypes,P,Q,V,T,ybus_matrix);
+        if(FREEZE_JAC==0)
+            [jfull,err]=nrpf_jac(BusTypes,V,T,ybus_matrix);
+            if(isempty(err)==0)
+                disp(err);
+                return;
+            end
+        end
         itermap=containers.Map;
         itermap('jacobian')=jfull;
 
