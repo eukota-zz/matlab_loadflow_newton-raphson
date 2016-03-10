@@ -155,34 +155,53 @@ function [results,err]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX,FREEZ
         iter=iter+1;
     end
 
-    %% Print Final Results
-    fprintf('Final Results: ');
-    fprintf('%d iterations',iter-1);
+    %% Calculate Final Results
+    % Bus Power
+    for n=1:buscount
+        Pinj=nearzero(pfunc(n,V,T,ybus_matrix));
+        Qinj=nearzero(qfunc(n,V,T,ybus_matrix));
+        PG(n)=nearzero(Pinj+PL(n));
+        QG(n)=nearzero(Qinj+QL(n));
+        PL(n)=nearzero(PL(n));
+        QL(n)=nearzero(QL(n));
+    end
+    % Branch Power
+    [From,To,~,~,~,~,err]=parse_branch_data(branchdata);
+    if(isempty(err)==0)
+        disp(err);
+        return;
+    end
+    branchcount=length(From);
+    branchpower=zeros(branchcount,4); % from, to, p, q
+    for n=1:branchcount
+        branchpower(n,1)=From(n);
+        branchpower(n,2)=To(n);
+        branchpower(n,3)=pbranch(From(n),To(n),V,T,ybus_matrix);
+        branchpower(n,4)=qbranch(From(n),To(n),V,T,ybus_matrix);
+    end
+%     results('branchflow')=branchpower;
+    
+    %% Note Success or Failure
     if iter<ITER_MAX
         fprintf(', mismatch target of S=%f met\n',THRESH);
     else
         fprintf(', mismatch target of S=%f likely not met as max iterations performed\n',THRESH);
     end
-    pmatrix=zeros(buscount,2);
-    for n=1:buscount
-        Pinj=nearzero(pfunc(n,V,T,ybus_matrix));
-        Qinj=nearzero(qfunc(n,V,T,ybus_matrix));
-        pmatrix(n,1)=nearzero(Pinj+PL(n));
-        pmatrix(n,2)=nearzero(Qinj+QL(n));
-        pmatrix(n,3)=nearzero(PL(n));
-        pmatrix(n,4)=nearzero(QL(n));
-    end
-    pmatrix=[pmatrix,V,T*180/pi];
+    
+    %% Print Final Results
+    fprintf('Final Results: ');
+    fprintf('%d iterations',iter-1);
+    pmatrix=[PG,QG,PL,QL,V,T*180/pi];
     buslabels=sprintf('Bus_%d ', 1:buscount);
     printmat(pmatrix,'name',buslabels,'PG QG PL QL V Th(deg)');
     
     %% Gather Results
-    results('PG')=pmatrix(:,1);
-    results('QG')=pmatrix(:,2);
-    results('PL')=pmatrix(:,3);
-    results('QL')=pmatrix(:,4);
-    results('P')=results('PG')-results('PL');
-    results('Q')=results('QG')-results('QL');
+    results('PG')=PG;
+    results('QG')=QG;
+    results('PL')=PL;
+    results('QL')=QL;
+    results('P')=PG-PL;
+    results('Q')=QG-QL;
     results('V')=V;
     results('T')=T;
 end
