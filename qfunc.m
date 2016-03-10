@@ -13,7 +13,6 @@ function [out]=qfunc(Q_index,Voltage,Theta,Ybus)
     % From Slide 37 in Notes
     out = 0;
     for n=1:length(Voltage)
-        out=out + Voltage(Q_index)*Voltage(n)*(real(Ybus(Q_index,n))*sin(Theta(Q_index)-Theta(n))...
-                                              -imag(Ybus(Q_index,n))*cos(Theta(Q_index)-Theta(n)));
+        out=out + qbranch(Q_index,n,Voltage,Theta,Ybus);
     end
 end

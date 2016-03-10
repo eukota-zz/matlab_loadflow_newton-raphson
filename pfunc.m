@@ -13,7 +13,6 @@ function [out]=pfunc(P_index,Voltage,Theta,Ybus)
     % From Slide 37 in Notes
     out = 0;
     for n=1:length(Voltage)
-        out=out + Voltage(P_index)*Voltage(n)*(real(Ybus(P_index,n))*cos(Theta(P_index)-Theta(n))...
-                                              +imag(Ybus(P_index,n))*sin(Theta(P_index)-Theta(n)));
+        out=out + pbranch(P_index,n,Voltage,Theta,Ybus);
     end
 end
