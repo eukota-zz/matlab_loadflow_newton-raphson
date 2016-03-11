@@ -169,7 +169,7 @@ function [results,err]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX,FREEZ
     end
     
     % Branch Flow Forward, Sending and Receiving
-    [From,To,R,X,G,B,err]=parse_branch_data(branchdata);
+    [From,To,R,X,~,B,err]=parse_branch_data(branchdata);
     branchcount=length(From);
     Ss=zeros(buscount,3);
     Sr=zeros(buscount,3);
