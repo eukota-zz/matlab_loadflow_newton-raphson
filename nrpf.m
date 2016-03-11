@@ -2,6 +2,7 @@
 % Newton-Raphson Power Flow performs a classic power flow. Required inputs
 % provide bus and branch data about the circuit.
 %%% USAGE
+% * *[results]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX,FREEZE_JAC)*
 % * *[results]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX)*
 % * *[results]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH)*
 % * *[results]=nrpf(busdata,branchdata,PRINT_ITERS)*
@@ -167,48 +168,42 @@ function [results,err]=nrpf(busdata,branchdata,PRINT_ITERS,THRESH,ITER_MAX,FREEZ
         QL(n)=nearzero(QL(n));
     end
     
-    % Branch Power
-    [From,To,~,~,~,~,err]=parse_branch_data(branchdata);
-    if(isempty(err)==0)
-        disp(err);
-        return;
-    end
+    % Branch Flow Forward, Sending and Receiving
+    [From,To,R,X,G,B,err]=parse_branch_data(branchdata);
     branchcount=length(From);
-    branchpowerF=zeros(branchcount,5); % from, to, p, q, s
-    branchpowerB=zeros(branchcount,5); % to, from, p, q, s
+    Ss=zeros(buscount,3);
+    Sr=zeros(buscount,3);
     for n=1:branchcount
-        % Forward
-        branchpowerF(n,1)=From(n);
-        branchpowerF(n,2)=To(n);
-        branchpowerF(n,3)=pbranch(From(n),To(n),V,T,ybus_matrix);
-        branchpowerF(n,4)=qbranch(From(n),To(n),V,T,ybus_matrix);
-        branchpowerF(n,5)=(branchpowerF(n,3)^2+branchpowerF(n,4)^2)^(0.5);
-        % Backward
-        branchpowerB(n,1)=To(n);
-        branchpowerB(n,2)=From(n);
-        branchpowerB(n,3)=pbranch(To(n),From(n),V,T,ybus_matrix);
-        branchpowerB(n,4)=qbranch(To(n),From(n),V,T,ybus_matrix);
-        branchpowerB(n,5)=(branchpowerB(n,3)^2+branchpowerB(n,4)^2)^(0.5);
-    end
-    results('bff')=branchpowerF;
-    results('bfb')=branchpowerB;
-    
-    %% Branch Power via Miguel's Instructions
-    % Sij=ViIi^*=Vi((Vi-Vj)/Z)
-    % Z=R+jX
-    % V=V
-    S=zeros(buscount,3);
-    for n=1:branchcount
-        S(n,1)=From(n);
-        S(n,2)=To(n);
-        Z=-1/ybus_matrix(From(n),To(n));
+        Ss(n,1)=From(n);
+        Ss(n,2)=To(n);
+        Sr(n,1)=From(n);
+        Sr(n,2)=To(n);
+        Z=(R(n)+1i*X(n));
         vfrom=V(From(n))*(cos(T(From(n)))+1i*sin(T(From(n))));
         vto=V(To(n))*(cos(T(To(n)))+1i*sin(T(To(n))));
         I=(vfrom-vto)/Z;
-        S(n,3)=vfrom*conj(I);
+        Ss(n,3)=vfrom*conj(I)-1i*((vfrom)^2)*B(n);
+        Sr(n,3)=vfrom*conj(I)+1i*((vfrom)^2)*B(n);
     end
-    results('bfs')=S;
-    
+    results('bffs')=Ss;
+    results('bffr')=Sr;
+    % Branch Flow Reverse, Sending and Receiving
+    Ss=zeros(buscount,3);
+    Sr=zeros(buscount,3);
+    for n=1:branchcount
+        Ss(n,1)=To(n);
+        Ss(n,2)=From(n);
+        Sr(n,1)=To(n);
+        Sr(n,2)=From(n);
+        Z=(R(n)+1i*X(n));
+        vfrom=V(To(n))*(cos(T(To(n)))+1i*sin(T(To(n))));
+        vto=V(From(n))*(cos(T(From(n)))+1i*sin(T(From(n))));
+        I=(vfrom-vto)/Z;
+        Ss(n,3)=vfrom*conj(I)-1i*((vfrom)^2)*B(n);
+        Sr(n,3)=vfrom*conj(I)+1i*((vfrom)^2)*B(n);
+    end
+    results('bfrs')=Ss;
+    results('bfrr')=Sr;
     
     %% Note Success or Failure
     if iter<ITER_MAX
