@@ -20,6 +20,7 @@ function [err]=compare_maps(mapL,mapR)
         value=mapL(keysL{i});
         if(mapR.isKey(keysL{i})==0)
             fprintf('Key "%s" in mapL is missing in mapR\n',keysL{i});
+            results(i)=1;
             continue;
         end
         if(isa(value,'containers.Map'))
