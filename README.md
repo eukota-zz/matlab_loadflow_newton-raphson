@@ -13,7 +13,7 @@ Viewing the contents of the `runall.m` file will show the order to call function
 
 # Data Inputs
 Inputs are expected in two matrixes. Examples are availabe in the two test system files `tsa.m` and `tsb.m`.
-*Branch Data*
+**Branch Data**
 Columns:
  - From Bus Number
  - To Bus Number
@@ -22,7 +22,7 @@ Columns:
  - Branch Shunt Resistance (not sure I have terminology correct on this one)
  - Branch Shunt Capacitance (not sure I have terminology correct on this one)
  
-*Bus Data*
+**Bus Data**
 Columns:
  - Bus Number
  - Type: 1 = slack, 2 = PQ, 3 = PV
@@ -60,3 +60,36 @@ The results returned from the nrpf function is a MATLAB `containers.Map` object.
     - `V` - the new voltage magnitude for that iteration
     - `T` - the new voltage angle (in radians) for that iteration 
     
+
+# Sample Data Run
+Get data from *Test System A* and run powerflow on it.
+```
+[busdata,branchdata]=tsa(); 
+[results]=nrpf(busdata,branchdata);
+```
+
+Display the ybus matrix:
+```
+results('ybus')
+```
+
+Display the jacobian from the second iteration:
+```
+iter2=results('iter2');
+iter2('jacobian')
+```
+
+Print all results data to the console:
+```
+print_nrpf(results);
+```
+
+# Regression Test
+A regression test along with data for the test allows verifying that changes to the algorithm do not break it.
+```
+nrpf_test();
+```
+A successful run will print:
+```
+Regression test passed!
+```
