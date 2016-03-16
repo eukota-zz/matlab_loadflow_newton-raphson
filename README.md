@@ -44,19 +44,19 @@ Once the bus and branch data are read in, the main Newton-Raphson Power Flow (NR
 [results]=nrpf(busdata,branchdata,PRINT_ITERS)
 [results]=nrpf(busdata,branchdata)
 ```
- - PRINT_ITERS will print all iteration data if set to 1, defaults to 0
- - THRESH is the power mismatch threshold, defaults to 0.001
- - ITER_MAX is the maximum number of iterations, defaults to 10
- - FREEZE_JAC only calculates the jacobian the first time around. This was to answer a specific question in the final project really.
+ - `PRINT_ITERS` will print all iteration data if set to 1, defaults to 0
+ - `THRESH` is the power mismatch threshold, defaults to 0.001
+ - `ITER_MAX` is the maximum number of iterations, defaults to 10
+ - `FREEZE_JAC` only calculates the jacobian the first time around. This was to answer a specific question in the final project really.
 
 # Interpreting Results
 The results returned from the nrpf function is a MATLAB `containers.Map` object. It contains the following keyed data:
- - ybus - ybus matrix
- - pmatrix - if PRINT_ITERS is set to 1, this contains the matrix that is printed for the last iteration
- - iter_ - a nested map containing data for each iteration where the _ is the number of the iteration
-    - jacobian - the jacobian for that iteration
-    - Pmm - the real power mismatch for that iteration
-    - Qmm - the reactive power mismatch for that iteration
-    - V - the new voltage magnitude for that iteration
-    - T - the new voltage angle (in radians) for that iteration 
+ - `ybus` - ybus matrix
+ - `pmatrix` - if PRINT_ITERS is set to 1, this contains the matrix that is printed for the last iteration
+ - `iter_` - a nested map containing data for each iteration where the _ is the number of the iteration
+    - `jacobian` - the jacobian for that iteration
+    - `Pmm` - the real power mismatch for that iteration
+    - `Qmm` - the reactive power mismatch for that iteration
+    - `V` - the new voltage magnitude for that iteration
+    - `T` - the new voltage angle (in radians) for that iteration 
     
